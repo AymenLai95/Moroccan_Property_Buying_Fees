@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Moroccan Property Purchase Tax Calculator</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#007bff">
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+      max-width: 700px;
+      margin: auto;
+      background-color: #f9f9f9;
+      color: #333;
+    }
+    .container {
+      background-color: #fff;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    label {
+      font-weight: 600;
+    }
+    input[type="number"], button, select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-sizing: border-box;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .result {
+      margin-top: 20px;
+      padding: 15px;
+      border-left: 5px solid #007bff;
+      background-color: #eef3fb;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2 id="title">Moroccan Property Purchase Tax Calculator</h2>
+
+    <label for="language">Language / اللغة / Langue :</label>
+    <select id="language" onchange="setLanguage()">
+      <option value="en">English</option>
+      <option value="ar">العربية</option>
+      <option value="fr">Français</option>
+    </select>
+
+    <label for="price" id="priceLabel">Property Price (MAD):</label>
+    <input type="number" id="price" />
+
+    <label for="mortgage" id="mortgageLabel">Mortgage Amount (MAD, optional):</label>
+    <input type="number" id="mortgage" />
+
+    <label for="agency" id="agencyLabel">Include Agency Fee (2.5%)?</label>
+    <input type="checkbox" id="agency" />
+
+    <button onclick="calculateFees()" id="calculateBtn">Calculate</button>
+
+    <div class="result" id="result"></div>
+  </div>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js')
+        .then(reg => console.log('Service Worker registered', reg))
+        .catch(err => console.error('Service Worker registration failed', err));
+    }
+
+    let currentLang = 'en';
+
+    const translations = {
+      en: {
+        title: "Moroccan Property Purchase Tax Calculator",
+        priceLabel: "Property Price (MAD):",
+        mortgageLabel: "Mortgage Amount (MAD, optional):",
+        agencyLabel: "Include Agency Fee (2.5%)?",
+        calculateBtn: "Calculate",
+        resultTitle: "Estimated Fees:",
+        fields: [
+          "Registration Fee",
+          "Land Registry Fee",
+          "Notary Fee",
+          "VAT on Notary",
+          "Stamp Duty",
+          "Agency Fee",
+          "Mortgage Fee",
+          "Total Estimated Fees",
+          "of property price"
+        ]
+      },
+      ar: {
+        title: "حاسبة الضرائب على شراء العقار في المغرب",
+        priceLabel: "ثمن العقار (بالدرهم):",
+        mortgageLabel: "قيمة القرض البنكي (اختياري):",
+        agencyLabel: "هل تريد حساب أتعاب الوكالة (2.5%)؟",
+        calculateBtn: "احسب",
+        resultTitle: "الرسوم التقديرية:",
+        fields: [
+          "رسوم التسجيل",
+          "رسوم التحفيظ",
+          "أتعاب الموثق",
+          "الضريبة على الموثق",
+          "واجبات الطابع",
+          "أتعاب الوكالة",
+          "رسوم القرض",
+          "إجمالي الرسوم التقديرية",
+          "من ثمن العقار"
+        ]
+      },
+      fr: {
+        title: "Calculateur des taxes d'achat immobilier au Maroc",
+        priceLabel: "Prix du bien (MAD) :",
+        mortgageLabel: "Montant du prêt (MAD, optionnel) :",
+        agencyLabel: "Inclure les frais d'agence (2.5%) ?",
+        calculateBtn: "Calculer",
+        resultTitle: "Frais estimés :",
+        fields: [
+          "Frais d'enregistrement",
+          "Frais de conservation foncière",
+          "Frais de notaire",
+          "TVA sur notaire",
+          "Droits de timbre",
+          "Frais d'agence",
+          "Frais de prêt",
+          "Total estimé des frais",
+          "du prix du bien"
+        ]
+      }
+    };
+
+    function setLanguage() {
+      currentLang = document.getElementById("language").value;
+      const t = translations[currentLang];
+
+      document.title = t.title;
+      document.getElementById("title").textContent = t.title;
+      document.getElementById("priceLabel").textContent = t.priceLabel;
+      document.getElementById("mortgageLabel").textContent = t.mortgageLabel;
+      document.getElementById("agencyLabel").textContent = t.agencyLabel;
+      document.getElementById("calculateBtn").textContent = t.calculateBtn;
+
+      document.body.style.direction = currentLang === "ar" ? "rtl" : "ltr";
+    }
+
+    function calculateFees() {
+      const price = parseFloat(document.getElementById("price").value);
+      const mortgage = parseFloat(document.getElementById("mortgage").value) || 0;
+      const includeAgency = document.getElementById("agency").checked;
+
+      if (!price || price <= 0) {
+        const messages = {
+          en: "Please enter a valid property price.",
+          ar: "يرجى إدخال ثمن صحيح للعقار.",
+          fr: "Veuillez entrer un prix valide pour le bien."
+        };
+        alert(messages[currentLang]);
+        return;
+      }
+
+      const t = translations[currentLang];
+
+      const registrationFee = price * 0.04;
+      const landRegistryFee = price * 0.015 + 200;
+      const notaryFee = price * 0.01;
+      const vatNotary = notaryFee * 0.10;
+      const stampDuty = price * 0.01;
+      const agencyFee = includeAgency ? price * 0.025 : 0;
+      const mortgageFee = mortgage > 0 ? mortgage * 0.015 : 0;
+
+      const totalFees = registrationFee + landRegistryFee + notaryFee + vatNotary + stampDuty + agencyFee + mortgageFee;
+      const totalPercentage = (totalFees / price) * 100;
+
+      const formatter = new Intl.NumberFormat('fr-FR', {
+        style: 'currency',
+        currency: 'MAD',
+        minimumFractionDigits: 2
+      });
+
+      const labels = t.fields;
+      document.getElementById("result").innerHTML = `
+        <strong>${t.resultTitle}</strong><br/>
+        ${labels[0]}: ${formatter.format(registrationFee)}<br/>
+        ${labels[1]}: ${formatter.format(landRegistryFee)}<br/>
+        ${labels[2]}: ${formatter.format(notaryFee)}<br/>
+        ${labels[3]}: ${formatter.format(vatNotary)}<br/>
+        ${labels[4]}: ${formatter.format(stampDuty)}<br/>
+        ${labels[5]}: ${formatter.format(agencyFee)}<br/>
+        ${labels[6]}: ${formatter.format(mortgageFee)}<br/><br/>
+        <strong>${labels[7]}: ${formatter.format(totalFees)}</strong><br/>
+        (${totalPercentage.toFixed(2)}% ${labels[8]})
+      `;
+    }
+  </script>
+</body>
+</html>
